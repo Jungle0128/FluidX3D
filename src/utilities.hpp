@@ -3091,28 +3091,67 @@ inline int hsv_to_rgb(const float h, const float s, const float v) {
 inline int hsv_to_rgb(const float3& hsv) {
 	return hsv_to_rgb(hsv.x, hsv.y, hsv.z);
 }
-inline int colorscale_rainbow(float x) { // coloring scheme (float [0, 1] -> int color)
-	x = clamp(6.0f*(1.0f-x), 0.0f, 6.0f);
-	float r=0.0f, g=0.0f, b=0.0f; // black
-	if(x<1.2f) { // red - yellow
-		r = 1.0f;
-		g = x*0.83333333f;
-	} else if(x>=1.2f&&x<2.0f) { // yellow - green
-		r = 2.5f-x*1.25f;
-		g = 1.0f;
-	} else if(x>=2.0f&&x<3.0f) { // green - cyan
-		g = 1.0f;
-		b = x-2.0f;
-	} else if(x>=3.0f&&x<4.0f) { // cyan - blue
-		g = 4.0f-x;
-		b = 1.0f;
-	} else if(x>=4.0f&&x<5.0f) { // blue - violet
-		r = x*0.4f-1.6f;
-		b = 3.0f-x*0.5f;
-	} else { // violet - black
-		r = 2.4f-x*0.4f;
-		b = 3.0f-x*0.5f;
+inline int colorscale_rainbow(float x) { // Wind comfort colorscale based on Lawson criteria
+	// x is normalized velocity: 0 = no wind, 1 = GRAPHICS_U_MAX (0.24 lu = 15 m/s)
+	x = clamp(x, 0.0f, 1.0f);
+
+	// Lawson thresholds normalized to GRAPHICS_U_MAX = 0.24 (15 m/s)
+	// Sitting:   4 m/s  -> 0.064 lu -> 0.064/0.24 = 0.267
+	// Standing:  6 m/s  -> 0.096 lu -> 0.096/0.24 = 0.400
+	// Walking:   8 m/s  -> 0.128 lu -> 0.128/0.24 = 0.533
+	// Business: 10 m/s  -> 0.160 lu -> 0.160/0.24 = 0.667
+	// Danger:   15 m/s  -> 0.240 lu -> 0.240/0.24 = 1.000
+
+	const float t_sitting = 0.267f;  //  4 m/s - Long-term sitting (Blue)
+	const float t_standing = 0.400f;  //  6 m/s - Short-term sitting (Cyan)
+	const float t_walking = 0.533f;  //  8 m/s - Walking (Green)
+	const float t_business = 0.667f;  // 10 m/s - Business walking (Yellow)
+	// Above t_business: uncomfortable (Orange), x >= 1.0: danger (Red)
+
+	float r, g, b;
+
+	if (x < t_sitting) {
+		// Blue zone: excellent comfort (sitting)
+		const float t = x / t_sitting;
+		r = 0.0f;
+		g = 0.2f + 0.3f * t;
+		b = 0.9f;
 	}
+	else if (x < t_standing) {
+		// Cyan zone: good comfort (standing)
+		const float t = (x - t_sitting) / (t_standing - t_sitting);
+		r = 0.0f;
+		g = 0.5f + 0.5f * t;
+		b = 0.9f - 0.4f * t;
+	}
+	else if (x < t_walking) {
+		// Green zone: moderate comfort (walking)
+		const float t = (x - t_standing) / (t_walking - t_standing);
+		r = 0.4f * t;
+		g = 1.0f;
+		b = 0.0f;
+	}
+	else if (x < t_business) {
+		// Yellow zone: tolerable (business walking)
+		const float t = (x - t_walking) / (t_business - t_walking);
+		r = 1.0f;
+		g = 1.0f - 0.2f * t;
+		b = 0.0f;
+	}
+	else if (x < 1.0f) {
+		// Orange zone: uncomfortable
+		const float t = (x - t_business) / (1.0f - t_business);
+		r = 1.0f;
+		g = 0.8f - 0.6f * t;
+		b = 0.0f;
+	}
+	else {
+		// Red zone: DANGER (>15 m/s)
+		r = 1.0f;
+		g = 0.0f;
+		b = 0.0f;
+	}
+
 	return color(r, g, b);
 }
 inline int colorscale_iron(float x) { // coloring scheme (float [0, 1] -> int color)

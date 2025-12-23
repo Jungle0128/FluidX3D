@@ -139,7 +139,45 @@ void main_label(const double frametime) {
 }
 
 void main_graphics() {
-	if(camera.allow_rendering) draw_bitmap(info.lbm->graphics.draw_frame());
+	if(camera.allow_rendering) {
+		draw_bitmap(info.lbm->graphics.draw_frame());
+		
+		/* ========== 绘制监控区域边框 ==========
+		const uint Nx = info.lbm->get_Nx(), Ny = info.lbm->get_Ny(), Nz = info.lbm->get_Nz();
+		const float x_min = MONITOR_X_MIN * Nx, x_max = MONITOR_X_MAX * Nx;
+		const float y_min = MONITOR_Y_MIN * Ny, y_max = MONITOR_Y_MAX * Ny;
+		const float z_min = (float)MONITOR_Z_MIN_CELLS, z_max = MONITOR_Z_MAX * Nz;
+		
+		// 坐标需要相对于模拟盒中心（FluidX3D 的坐标系原点在中心）
+		const float3 offset = float3(0.5f * Nx, 0.5f * Ny, 0.5f * Nz);
+		const float3 p0 = float3(x_min, y_min, z_min) - offset;
+		const float3 p1 = float3(x_max, y_min, z_min) - offset;
+		const float3 p2 = float3(x_max, y_max, z_min) - offset;
+		const float3 p3 = float3(x_min, y_max, z_min) - offset;
+		const float3 p4 = float3(x_min, y_min, z_max) - offset;
+		const float3 p5 = float3(x_max, y_min, z_max) - offset;
+		const float3 p6 = float3(x_max, y_max, z_max) - offset;
+		const float3 p7 = float3(x_min, y_max, z_max) - offset;
+		
+		const int color = 0xFF0000; // 红色边框
+		
+		// 底面
+		draw_line(p0, p1, color);
+		draw_line(p1, p2, color);
+		draw_line(p2, p3, color);
+		draw_line(p3, p0, color);
+		// 顶面
+		draw_line(p4, p5, color);
+		draw_line(p5, p6, color);
+		draw_line(p6, p7, color);
+		draw_line(p7, p4, color);
+		// 竖边
+		draw_line(p0, p4, color);
+		draw_line(p1, p5, color);
+		draw_line(p2, p6, color);
+		draw_line(p3, p7, color);
+		*/
+	}
 }
 #endif // GRAPHICS
 
